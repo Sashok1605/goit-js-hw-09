@@ -2,6 +2,8 @@
 import flatpickr from "flatpickr";
 // Дополнительный импорт стилей
 import "flatpickr/dist/flatpickr.min.css";
+import { Report } from 'notiflix';
+
 
 const selector = document.querySelector('#date-selector')
 const btnStartNode = document.querySelector('button[data-start]');
@@ -10,26 +12,35 @@ const dateDays = document.querySelector('span[data-days]');
 const dateHours = document.querySelector('span[data-hours]');
 const dateMinutes = document.querySelector('span[data-minutes]');
 const dateSeconds = document.querySelector('span[data-seconds]');
+const timer = document.querySelector('.timer');
 
 
-let startTime = {};
+timer.style.display = 'flex';
+timer.style.color = 'red';
+
+
 let currentDate = new Date();
 let selectedDate = new Date();
-btnStartNode.disable = true;
-btnStopNode.disable = true;
+let timerId = null;
+let startTime = {};
+btnStartNode.disabled = true;
+btnStopNode.disabled = true;
 
 const options = {
     enableTime: true,
     time_24hr: true,
     defaultDate: new Date(),
     minuteIncrement: 1,
+    theme: 'dark',
     onClose(selectedDates) {
       selectedDate = selectedDates[0]
       if(selectedDate < options.defaultDate){
-      alert('Please choose a date in the future');
-      btnStartNode.disable = true;
+      Report.warning('Please choose a date in the future', '', 'Ok');
+      btnStartNode.disabled = true;
+      btnStopNode.disabled = true;
     } else {
-      btnStartNode.disable = false;
+      btnStartNode.disabled = false;
+      btnStopNode.disabled = false;
     }
   }
 }
@@ -53,22 +64,8 @@ const options = {
     return { days, hours, minutes, seconds };
   }
   
-flatpickr(selector, options)
+
 btnStartNode.addEventListener('click', onClick);
-
-function onClick() {
-    const timerId = setInterval(() => {
-      currentDate = new Date()
-
-        if (currentDate < selectedDate) {
-          startTime = convertMs(selectedDate - currentDate);
-          showTime(startTime);
-        } else {
-            clearInterval(timerId);
-        }
-    }, options.minuteIncrement);
-};
-
 
 function showTime(startTime) {
   
@@ -77,7 +74,29 @@ function showTime(startTime) {
   dateMinutes.textContent = addLeadingZero(startTime.minutes);
   dateSeconds.textContent = addLeadingZero(startTime.seconds);
 }
+
+function onClick() {
+    timerId = setInterval(() => {
+      currentDate = new Date()
+
+        if (currentDate < selectedDate) {
+          startTime = convertMs(selectedDate - currentDate);
+          showTime(startTime);
+        } else {
+          btnStopNode.disabled = false;
+          clearInterval(timerId);
+        }
+    }, options.minuteIncrement);
+};
+
+
+
 function addLeadingZero(value) {
   return String(value).padStart(2, '0');
 }
 
+btnStopNode.addEventListener ('click', () => {
+    clearInterval(timerId);
+})
+
+flatpickr(selector, options)
